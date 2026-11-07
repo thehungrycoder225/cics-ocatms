@@ -1,0 +1,12 @@
+.login-screen .login-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.login-screen .login-card::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: var(--brand-gold);
+  content: "";
+}
