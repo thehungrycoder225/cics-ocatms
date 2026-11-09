@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Brand } from '@/components/brand';
 import { getAuthenticatedIdentity } from '@/lib/authorization';
 
 export default async function HomePage() {
@@ -8,7 +9,8 @@ export default async function HomePage() {
       return (
         <main className='page-shell grid place-items-center'>
           <section className='card w-full max-w-xl p-7 sm:p-10'>
-            <p className='eyebrow'>Account setup required</p>
+            <Brand />
+            <p className='eyebrow mt-6'>Account setup required</p>
             <h1 className='mt-3 text-3xl font-bold'>
               No workspace is assigned
             </h1>
@@ -31,7 +33,8 @@ export default async function HomePage() {
     return (
       <main className='page-shell grid place-items-center'>
         <section className='card w-full max-w-xl p-7 sm:p-10'>
-          <p className='eyebrow'>Marinduque State University</p>
+          <Brand />
+          <p className='eyebrow mt-6'>Marinduque State University</p>
           <h1 className='mt-3 text-3xl font-bold'>Your workspace</h1>
           <p className='mt-3 font-semibold'>{identity.fullName}</p>
           <p className='muted mt-3 leading-7'>
@@ -48,9 +51,7 @@ export default async function HomePage() {
   return (
     <main className='page-shell grid place-items-center'>
       <section className='card w-full max-w-xl p-7 sm:p-10'>
-        <div className='brand text-lg'>
-          <span>MarSU OCATMS</span>
-        </div>
+        <Brand />
         <p className='eyebrow mt-9'>
           Off-Campus Activity Tracking and Monitoring System
         </p>

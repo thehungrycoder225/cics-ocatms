@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { Brand } from '@/components/brand';
 import { SignInForm } from '@/components/sign-in-form';
 import './login.css';
 
@@ -9,9 +9,7 @@ export default function LoginPage() {
         className='login-card card w-full max-w-md p-6 sm:p-9'
         aria-labelledby='login-heading'
       >
-        <Link className='brand text-lg no-underline' href='/'>
-          <span>MarSU OCATMS</span>
-        </Link>
+        <Brand href='/' />
         <p className='eyebrow mt-9'>University workspace</p>
         <h1
           className='mt-2 text-2xl font-bold tracking-tight'

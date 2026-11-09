@@ -1,14 +1,12 @@
 import Link from "next/link";
+import { Brand } from "@/components/brand";
 import { PwaInstallHelp } from "@/components/pwa-install-help";
 
 export default function SettingsPage() {
   return (
     <main className="page-shell">
       <article className="content-width card p-6 sm:p-9">
-        <Link className="brand text-lg no-underline" href="/">
-          <span aria-hidden="true" className="brand-mark">OC</span>
-          <span>MarSU OCATMS</span>
-        </Link>
+        <Brand href="/" />
         <h1 className="mt-8 text-2xl font-bold">Privacy and installation</h1>
         <div className="muted mt-4 max-w-3xl space-y-4 leading-7">
           <p>

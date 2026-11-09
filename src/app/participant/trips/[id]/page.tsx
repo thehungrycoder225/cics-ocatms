@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Brand } from "@/components/brand";
 import { notFound } from "next/navigation";
 import { TripControls } from "@/components/trip-controls";
 import { requireRoleForPage } from "@/lib/page-authorization";
@@ -20,18 +21,15 @@ export default async function ParticipantTripPage({
     <main className="page-shell">
       <div className="content-width">
         <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-          <Link className="brand text-lg no-underline" href="/participant">
-            <span aria-hidden="true" className="brand-mark">OC</span>
-            <span>MarSU OCATMS</span>
-          </Link>
+          <Brand href="/participant" />
           <Link className="inline-flex min-h-11 items-center text-sm font-semibold text-[#245b4e] underline" href={`/participant/activities/${stop.activityId}`}>
             Back to activity
           </Link>
         </header>
-        <section className="mt-6">
-          <p className="eyebrow break-words">{stop.activityTitle} · Day {stop.day} · Stop {stop.sequence}</p>
-          <h1 className="mt-2 break-words text-3xl font-bold tracking-tight">{stop.destination}</h1>
-          {stop.departureLocation ? <p className="muted mt-2 text-sm">From: {stop.departureLocation}</p> : null}
+        <section className="trip-leg-header mt-6">
+          <p className="trip-leg-context">{stop.activityTitle} · Day {stop.day} · Stop {stop.sequence}</p>
+          <h1 className="mt-2 break-words text-2xl font-bold tracking-tight sm:text-3xl">{stop.destination}</h1>
+          <p className="muted mt-2 text-sm">From: {stop.departureLocation ?? "Unavailable"} · {stop.travelMode.replaceAll("_", " ").toLowerCase()}</p>
           {stop.plannedArrival ? (
             <p className="muted mt-2 text-sm">
               Planned arrival: {new Date(stop.plannedArrival).toLocaleString("en-PH", { timeZone: "Asia/Manila" })}

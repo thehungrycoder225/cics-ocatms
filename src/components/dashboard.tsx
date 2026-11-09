@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Brand } from "@/components/brand";
 import type { PrimaryRole } from "@/lib/roles";
 import { listVisibleActivities } from "@/lib/activities";
 import type { AuthenticatedIdentity } from "@/lib/authorization";
@@ -30,10 +30,7 @@ export async function Dashboard({
     <main className="page-shell">
       <div className="content-width">
         <header className="flex flex-wrap items-center justify-between gap-4">
-          <Link className="brand text-lg no-underline" href="/">
-            <span aria-hidden="true" className="brand-mark">OC</span>
-            <span>MarSU OCATMS</span>
-          </Link>
+          <Brand href="/" />
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-[#64736f] sm:inline">{identity.fullName}</span>
             <SignOutButton />

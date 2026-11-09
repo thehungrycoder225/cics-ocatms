@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { ParticipantStopSummary } from "@/lib/participant-journey";
+import { formatRecordedLocation } from "@/lib/participant-trip-display";
+import { tryRefreshTripState } from "@/lib/trip-refresh";
 import { EvidencePreview } from "@/components/evidence-preview";
 
 interface LocationFix {
@@ -69,17 +71,10 @@ export function TripControls({ initialStop }: TripControlsProps) {
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [refreshFailure, setRefreshFailure] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
-  const [lastFix, setLastFix] = useState<Pick<LocationFix, "accuracyM" | "gpsAcquiredAt"> | null>(
-    initialStop.lastGpsAcquiredAt && initialStop.lastAccuracyM !== null
-      ? {
-          accuracyM: initialStop.lastAccuracyM,
-          gpsAcquiredAt: initialStop.lastGpsAcquiredAt,
-        }
-      : null,
-  );
 
   useEffect(() => {
     if (videoRef.current && streamRef.current) {
@@ -126,6 +121,20 @@ export function TripControls({ initialStop }: TripControlsProps) {
     router.refresh();
   }
 
+  async function refreshConfirmedState() {
+    const failure = await tryRefreshTripState(refreshStop);
+    setRefreshFailure(failure);
+  }
+
+  async function retryRefresh() {
+    setWorking(true);
+    try {
+      await refreshConfirmedState();
+    } finally {
+      setWorking(false);
+    }
+  }
+
   async function startTrip() {
     setWorking(true);
     setErrorMessage("");
@@ -137,11 +146,10 @@ export function TripControls({ initialStop }: TripControlsProps) {
         idempotencyKey: crypto.randomUUID(),
         fix,
       });
-      setLastFix(fix);
       setMessage(result.etaStatus === "AVAILABLE"
         ? "Travel started. ETA is a route estimate, not a live location."
         : "Travel started. Route ETA is unavailable; your trip remains active.");
-      await refreshStop();
+      await refreshConfirmedState();
     } catch (error) {
       setErrorMessage(getActionError(error, "Travel could not be started."));
     } finally {
@@ -160,11 +168,10 @@ export function TripControls({ initialStop }: TripControlsProps) {
         idempotencyKey: crypto.randomUUID(),
         fix,
       });
-      setLastFix(fix);
       setMessage(result.etaStatus === "AVAILABLE"
         ? "Location update received. The route ETA was refreshed from this reported fix."
         : "Location update received. Route ETA is unavailable.");
-      await refreshStop();
+      await refreshConfirmedState();
     } catch (error) {
       setErrorMessage(getActionError(error, "Location update failed."));
     } finally {
@@ -238,7 +245,6 @@ export function TripControls({ initialStop }: TripControlsProps) {
     setMessage("");
     try {
       const fix = await getLocation();
-      setLastFix(fix);
       const form = new FormData();
       form.set("milestone", JSON.stringify({ idempotencyKey: crypto.randomUUID(), fix }));
       if (photo) form.set("photo", photo, `${kind.toLowerCase()}.jpg`);
@@ -257,7 +263,7 @@ export function TripControls({ initialStop }: TripControlsProps) {
         `Geofence: ${String(result.geofenceStatus)}. Validation: ${String(result.validationStatus)}.` +
         (flags ? ` Review flags: ${flags}.` : ""),
       );
-      await refreshStop();
+      await refreshConfirmedState();
     } catch (error) {
       setErrorMessage(getActionError(error, "Milestone submission failed."));
     } finally {
@@ -270,14 +276,13 @@ export function TripControls({ initialStop }: TripControlsProps) {
   const checkoutExists = Boolean(stop.checkoutAt);
 
   return (
-    <section className="card mt-6 p-5 sm:p-7" aria-labelledby="trip-controls-heading">
+    <section className="card trip-workspace mt-6 p-5 sm:p-7" aria-labelledby="trip-controls-heading">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="eyebrow">Participant-controlled milestones</p>
-          <h2 className="mt-1 text-xl font-bold" id="trip-controls-heading">Trip actions</h2>
+          <h2 className="text-xl font-bold" id="trip-controls-heading">Trip actions</h2>
         </div>
         <span className="rounded-full bg-[#e4f2ec] px-3 py-1 text-xs font-bold text-[#245b4e]">
-          {stop.status.replaceAll("_", " ")}
+          {stop.status.replaceAll("_", " ")}{refreshFailure !== null ? " (may be out of date)" : ""}
         </span>
       </div>
 
@@ -292,41 +297,34 @@ export function TripControls({ initialStop }: TripControlsProps) {
           A captured photo remains only in this page until submitted or discarded.
         </p>
       ) : null}
-
-      {stop.etaStatus === "AVAILABLE" && stop.etaAt ? (
-        <p className="mt-3 rounded-lg bg-[#f5f8f6] p-3 text-sm">
-          <strong>Estimated arrival:</strong> {new Date(stop.etaAt).toLocaleString("en-PH", { timeZone: "Asia/Manila" })}{" "}
-          <span className="muted">(route estimate; not a live position)</span>
-        </p>
-      ) : stop.sessionId && inTransit ? (
-        <p className="muted mt-3 text-sm">Route ETA unavailable.</p>
-      ) : null}
-
-      {lastFix ? (
-        <p className="muted mt-3 rounded-lg bg-[#f5f8f6] p-3 text-xs leading-5">
-          Last submitted fix: ±{Math.round(lastFix.accuracyM)} m accuracy ·{" "}
-          {new Date(lastFix.gpsAcquiredAt).toLocaleString("en-PH", { timeZone: "Asia/Manila" })}.
-          {stop.lastLocationReceivedAt
-            ? ` Received by server ${new Date(stop.lastLocationReceivedAt).toLocaleString("en-PH", { timeZone: "Asia/Manila" })}.`
-            : ""}
-          {" "}This is the last reported fix, not a live location.
-        </p>
+      {message ? <p className="mt-4 rounded-lg bg-[#e4f2ec] p-3 text-sm leading-6" role="status">{message}</p> : null}
+      {errorMessage ? <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm leading-6 text-red-800" role="alert">{errorMessage}</p> : null}
+      {refreshFailure !== null ? (
+        <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm leading-6 text-red-800">
+          <p role="alert">
+            The server confirmed your action, but trip details could not be refreshed and may be out of date.
+            Refresh the trip state before submitting another action. {refreshFailure}
+          </p>
+          <button className="button-secondary mt-3" disabled={working || !isOnline} onClick={retryRefresh} type="button">
+            {working ? "Refreshing…" : "Refresh trip state"}
+          </button>
+        </div>
       ) : null}
 
       {!stop.sessionId || stop.status === "NOT_STARTED" ? (
-        <button className="button-primary mt-5 w-full sm:w-auto" disabled={working || !isOnline} onClick={startTrip} type="button">
+        <button className="button-primary mt-5 w-full sm:w-auto" disabled={working || !isOnline || refreshFailure !== null} onClick={startTrip} type="button">
           {working ? "Requesting location…" : "Start Travel"}
         </button>
       ) : null}
 
       {inTransit ? (
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <button className="button-primary" disabled={working || !isOnline} onClick={updateLocation} type="button">
+          <button className="button-primary" disabled={working || !isOnline || refreshFailure !== null} onClick={updateLocation} type="button">
             {working ? "Requesting location…" : "Update Location"}
           </button>
           <button
             className="min-h-11 rounded-xl border border-[#dce5e1] px-4 py-3 font-semibold"
-            disabled={working || !isOnline}
+            disabled={working || !isOnline || refreshFailure !== null}
             onClick={() => void submitMilestone("ARRIVAL")}
             type="button"
           >
@@ -344,7 +342,7 @@ export function TripControls({ initialStop }: TripControlsProps) {
           </p>
           <button
             className="button-primary mt-4 w-full sm:w-auto"
-            disabled={working || cameraActive || !isOnline}
+            disabled={working || cameraActive || !isOnline || refreshFailure !== null}
             onClick={() => void submitMilestone("CHECKOUT")}
             type="button"
           >
@@ -354,21 +352,21 @@ export function TripControls({ initialStop }: TripControlsProps) {
       ) : null}
 
       {!checkoutExists && stop.sessionId && !photo && (inTransit || arrivalExists) ? (
-        <div className="mt-5 border-t border-[#dce5e1] pt-5">
+        <div className="trip-evidence mt-5 border-t border-[#dce5e1] pt-5">
           <h3 className="font-bold">In-app photo evidence</h3>
           <p className="muted mt-1 text-sm leading-6">
             Capture a photo for this milestone. The original is retained privately; the derivative
             receives a visible server-time and GPS stamp. A stamp does not independently verify presence.
           </p>
           {!cameraActive ? (
-            <button className="mt-3 min-h-11 rounded-xl border border-[#dce5e1] px-4 py-3 font-semibold" disabled={!isOnline} onClick={openCamera} type="button">
+            <button className="mt-3 min-h-11 rounded-xl border border-[#dce5e1] px-4 py-3 font-semibold" disabled={!isOnline || refreshFailure !== null} onClick={openCamera} type="button">
               Open camera
             </button>
           ) : (
             <div className="mt-3 space-y-3">
               <video aria-label="Live camera preview" autoPlay className="w-full rounded-xl bg-black" playsInline ref={videoRef} />
               <div className="flex flex-wrap gap-3">
-                <button className="button-primary" disabled={working || !isOnline} onClick={capturePhoto} type="button">
+                <button className="button-primary" disabled={working || !isOnline || refreshFailure !== null} onClick={capturePhoto} type="button">
                   {working ? "Preparing photo…" : "Capture photo"}
                 </button>
                 <button
@@ -398,28 +396,49 @@ export function TripControls({ initialStop }: TripControlsProps) {
         </div>
       ) : null}
 
-      {checkoutExists ? (
-        <p className="mt-5 rounded-lg bg-[#e4f2ec] p-3 text-sm leading-6">
-          Check-out was received at{" "}
-          {new Date(stop.checkoutAt ?? "").toLocaleString("en-PH", { timeZone: "Asia/Manila" })}.
-          Dwell time: {stop.dwellSeconds === null ? "pending" : `${Math.floor(stop.dwellSeconds / 60)} min`}{" "}
-          {stop.dwellProvisional ? "(provisional; evidence review pending)" : ""}.
-        </p>
-      ) : null}
-      {stop.arrivalEvidenceId ? (
-        <EvidencePreview evidenceId={stop.arrivalEvidenceId} title="Arrival evidence" />
-      ) : null}
-      {stop.checkoutEvidenceId ? (
-        <EvidencePreview evidenceId={stop.checkoutEvidenceId} title="Check-out evidence" />
-      ) : null}
-
-      {message ? <p className="mt-4 rounded-lg bg-[#e4f2ec] p-3 text-sm leading-6" role="status">{message}</p> : null}
-      {errorMessage ? <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm leading-6 text-red-800" role="alert">{errorMessage}</p> : null}
       <p className="muted mt-4 text-xs leading-5">
         You may submit without a photo if capture is unavailable; that submission is flagged for
         human review. Outside-geofence and low-accuracy fixes are flagged rather than represented
         as verified.
       </p>
+
+      <section aria-label="Recorded trip details" className="trip-recorded">
+        <details open>
+          <summary>Recorded trip details</summary>
+          <dl className="trip-recorded-grid">
+            <div>
+              <dt>Route ETA</dt>
+              <dd>
+                {stop.etaStatus === "AVAILABLE" && stop.etaAt
+                  ? `${new Date(stop.etaAt).toLocaleString("en-PH", { timeZone: "Asia/Manila" })} (estimate, not a live position)`
+                  : "Unavailable"}
+              </dd>
+            </div>
+            <div>
+              <dt>Last travel/location update fix</dt>
+              <dd>{formatRecordedLocation(stop)}</dd>
+            </div>
+            <div>
+              <dt>Arrival received</dt>
+              <dd>{stop.arrivalAt ? new Date(stop.arrivalAt).toLocaleString("en-PH", { timeZone: "Asia/Manila" }) : "Not reported"}</dd>
+            </div>
+            <div>
+              <dt>Check-out received</dt>
+              <dd>{stop.checkoutAt ? new Date(stop.checkoutAt).toLocaleString("en-PH", { timeZone: "Asia/Manila" }) : "Not reported"}</dd>
+            </div>
+            <div>
+              <dt>Dwell time</dt>
+              <dd>{stop.dwellSeconds === null ? "Unavailable" : `${Math.floor(stop.dwellSeconds / 60)} min${stop.dwellProvisional ? " (provisional; evidence review pending)" : ""}`}</dd>
+            </div>
+          </dl>
+        </details>
+        {stop.arrivalEvidenceId ? (
+          <EvidencePreview evidenceId={stop.arrivalEvidenceId} title="Arrival evidence" />
+        ) : null}
+        {stop.checkoutEvidenceId ? (
+          <EvidencePreview evidenceId={stop.checkoutEvidenceId} title="Check-out evidence" />
+        ) : null}
+      </section>
     </section>
   );
 }

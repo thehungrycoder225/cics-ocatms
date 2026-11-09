@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { ItineraryBuilder, type BuilderStop } from "@/components/itinerary-builder";
+import { Brand } from "@/components/brand";
 import { ActivityNotFoundError, requireActivityPermission } from "@/lib/activity-management";
 import { AuthorizationError, getAuthenticatedIdentity } from "@/lib/authorization";
 import { getDb } from "@/lib/db";
@@ -67,7 +68,10 @@ export default async function ItineraryBuilderPage({ params }: { params: Promise
   return (
     <main className="page-shell">
       <div className="content-width">
-        <Link className="font-semibold underline" href="/">Back to workspace</Link>
+        <header className="flex flex-wrap items-center justify-between gap-4">
+          <Brand />
+          <Link className="font-semibold underline" href="/">Back to workspace</Link>
+        </header>
         <h1 className="mt-6 text-3xl font-bold">Itinerary builder</h1>
         <p className="muted mt-2">{data.activity.title} · {data.activity.start_date} – {data.activity.end_date}</p>
         <p className="muted mt-2 text-sm">Approval: {data.activity.approval_status}. Every itinerary change returns the activity to pending approval.</p>
