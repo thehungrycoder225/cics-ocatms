@@ -64,6 +64,14 @@ export function validateProductionEnvironment(env) {
           errors.push("Supabase Storage S3 endpoints require server-side S3 access keys.");
         }
       }
+      if (endpoint.hostname.endsWith(".r2.cloudflarestorage.com")) {
+        if (!["auto", "us-east-1"].includes(env.S3_REGION)) {
+          errors.push("Cloudflare R2 S3_REGION must be auto or us-east-1.");
+        }
+        if (!env.S3_ACCESS_KEY_ID || !env.S3_SECRET_ACCESS_KEY) {
+          errors.push("Cloudflare R2 requires server-side S3 access keys.");
+        }
+      }
     } catch {
       errors.push("S3_ENDPOINT must be a valid absolute URL.");
     }

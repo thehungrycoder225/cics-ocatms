@@ -6,6 +6,7 @@ import {
   requireActivityPermission,
 } from "@/lib/activity-management";
 import { activityUpdateSchema } from "@/lib/activity-validation";
+import { getActivityStatus } from "@/lib/activity-status";
 import { getAuthenticatedIdentity } from "@/lib/authorization";
 import { getDb } from "@/lib/db";
 
@@ -74,8 +75,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
         throw new RequestValidationError("The end date must be on or after the start date.");
       }
 
-      const today = new Date().toISOString().slice(0, 10);
-      const status = next.startDate > today ? "UPCOMING" : next.endDate < today ? "COMPLETED" : "ONGOING";
+      const status = getActivityStatus(next.startDate, next.endDate);
       const [updated] = await transaction<{ id: string }[]>`
         UPDATE activity
         SET title = ${next.title},

@@ -5,6 +5,7 @@ import { useState, type FormEvent } from "react";
 import { ActivityTable } from "@/components/activity-table";
 import { Brand } from "@/components/brand";
 import { MapIntelligencePanel } from "@/components/map-intelligence-panel";
+import { NotificationInbox } from "@/components/notification-inbox";
 import { ParticipantDetailDrawer } from "@/components/participant-detail-drawer";
 import { SignOutButton } from "@/components/sign-out-button";
 import {
@@ -361,6 +362,7 @@ export function MonitoringConsole({
               ) : null}
             </div>
             <div className="flex shrink-0 items-center gap-3">
+              <NotificationInbox />
               <span className="rounded-full bg-[#f8e8a6] px-3 py-1 text-xs font-bold text-[#400020]">{role}</span>
               <SignOutButton />
             </div>

@@ -227,7 +227,11 @@ export async function getMonitoringDashboard(
       a.venue,
       a.start_date::text AS start_date,
       a.end_date::text AS end_date,
-      a.status::text AS status,
+      CASE
+        WHEN a.start_date > (now() AT TIME ZONE 'Asia/Manila')::date THEN 'UPCOMING'
+        WHEN a.end_date < (now() AT TIME ZONE 'Asia/Manila')::date THEN 'COMPLETED'
+        ELSE 'ONGOING'
+      END AS status,
       a.approval_status::text AS approval_status,
       ARRAY(
         SELECT DISTINCT c.name
@@ -263,7 +267,14 @@ export async function getMonitoringDashboard(
         WHERE ac.activity_id = a.id AND ac.college_id = ${filters.collegeId ?? null}::uuid
       ))
       AND (${filters.activityId ?? null}::uuid IS NULL OR a.id = ${filters.activityId ?? null}::uuid)
-      AND (${filters.activityStatus ?? null}::text IS NULL OR a.status::text = ${filters.activityStatus ?? null}::text)
+      AND (
+        ${filters.activityStatus ?? null}::text IS NULL
+        OR CASE
+          WHEN a.start_date > (now() AT TIME ZONE 'Asia/Manila')::date THEN 'UPCOMING'
+          WHEN a.end_date < (now() AT TIME ZONE 'Asia/Manila')::date THEN 'COMPLETED'
+          ELSE 'ONGOING'
+        END = ${filters.activityStatus ?? null}::text
+      )
       AND (${filters.dateFrom ?? null}::date IS NULL OR a.end_date >= ${filters.dateFrom ?? null}::date)
       AND (${filters.dateTo ?? null}::date IS NULL OR a.start_date <= ${filters.dateTo ?? null}::date)
       AND ((${participantSearch}::text IS NULL AND ${filters.participantId ?? null}::uuid IS NULL) OR EXISTS (
@@ -313,7 +324,11 @@ export async function getMonitoringDashboard(
     SELECT
       a.id AS activity_id,
       a.title AS activity_title,
-      a.status::text AS activity_status,
+      CASE
+        WHEN a.start_date > (now() AT TIME ZONE 'Asia/Manila')::date THEN 'UPCOMING'
+        WHEN a.end_date < (now() AT TIME ZONE 'Asia/Manila')::date THEN 'COMPLETED'
+        ELSE 'ONGOING'
+      END AS activity_status,
       u.id AS participant_id,
       u.full_name AS participant_name,
       c.name AS college_name,
@@ -450,7 +465,14 @@ export async function getMonitoringDashboard(
         WHERE ac.activity_id = a.id AND ac.college_id = ${filters.collegeId ?? null}::uuid
       ))
       AND (${filters.activityId ?? null}::uuid IS NULL OR a.id = ${filters.activityId ?? null}::uuid)
-      AND (${filters.activityStatus ?? null}::text IS NULL OR a.status::text = ${filters.activityStatus ?? null}::text)
+      AND (
+        ${filters.activityStatus ?? null}::text IS NULL
+        OR CASE
+          WHEN a.start_date > (now() AT TIME ZONE 'Asia/Manila')::date THEN 'UPCOMING'
+          WHEN a.end_date < (now() AT TIME ZONE 'Asia/Manila')::date THEN 'COMPLETED'
+          ELSE 'ONGOING'
+        END = ${filters.activityStatus ?? null}::text
+      )
       AND (${filters.dateFrom ?? null}::date IS NULL OR a.end_date >= ${filters.dateFrom ?? null}::date)
       AND (${filters.dateTo ?? null}::date IS NULL OR a.start_date <= ${filters.dateTo ?? null}::date)
       AND (

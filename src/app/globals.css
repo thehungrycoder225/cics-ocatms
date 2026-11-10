@@ -657,6 +657,106 @@ a {
   letter-spacing: 0.09em;
 }
 
+.monitoring-notification-inbox {
+  position: relative;
+}
+
+.monitoring-notification-trigger {
+  position: relative;
+  width: 44px;
+  min-height: 40px;
+  flex: 0 0 44px;
+  border: 0;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.monitoring-toolbar .monitoring-notification-inbox .monitoring-notification-trigger {
+  border: 0;
+  padding-inline: 0;
+}
+
+.monitoring-notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  min-width: 19px;
+  height: 19px;
+  place-items: center;
+  border: 2px solid var(--surface);
+  border-radius: 999px;
+  background: var(--danger);
+  padding-inline: 3px;
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.monitoring-notification-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 100;
+  display: grid;
+  width: min(360px, calc(100vw - 32px));
+  max-height: min(65vh, 520px);
+  gap: 10px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 14px;
+  box-shadow: 0 12px 32px rgb(39 40 34 / 20%);
+}
+
+@media (max-width: 640px) {
+  .monitoring-notification-panel {
+    position: fixed;
+    top: 0;
+    right: 16px;
+    width: min(360px, calc(100% - 32px));
+    max-height: min(65dvh, 520px);
+  }
+}
+
+.monitoring-notification-panel h2 {
+  color: var(--brand-deep);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.monitoring-notification-refresh-note {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.monitoring-notification-list {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.monitoring-notification-list li {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 0.8rem;
+}
+
+.monitoring-notification-list li.monitoring-notification-unread {
+  border-left: 4px solid var(--brand-primary);
+}
+
+.monitoring-notification-list li > span {
+  color: var(--muted);
+}
+
 .monitoring-scope-note {
   margin: 14px 2px 0;
   color: var(--muted);
@@ -1024,6 +1124,49 @@ a {
   background: #fff;
 }
 
+.map-intelligence-marker-cluster span {
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  transform: rotate(45deg);
+}
+
+.map-intelligence-cluster-list {
+  display: grid;
+  max-height: 240px;
+  gap: 6px;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.map-intelligence-cluster-item {
+  display: grid;
+  width: 100%;
+  gap: 2px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 8px;
+  color: var(--ink);
+  text-align: left;
+}
+
+.map-intelligence-cluster-item:hover {
+  background: #f8f6f7;
+}
+
+.map-intelligence-cluster-item span {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
 .map-intelligence-empty {
   border: 1px dashed var(--control-border);
   border-radius: 10px;
@@ -1295,10 +1438,10 @@ a {
   top: 50%;
   left: 50%;
   display: flex;
-  width: min(96vw, 1240px);
+  width: min(1240px, calc(100vw - 2rem));
   max-width: none;
-  height: min(92dvh, 900px);
-  max-height: 92dvh;
+  height: min(900px, calc(100dvh - 2rem));
+  max-height: calc(100dvh - 2rem);
   flex-direction: column;
   gap: 0;
   overflow: hidden;
@@ -1308,6 +1451,7 @@ a {
   padding: 22px;
   color: var(--ink);
   box-shadow: 0 20px 60px rgb(0 0 0 / 28%);
+  translate: none !important;
   transform: translate(-50%, -50%);
 }
 
@@ -1958,7 +2102,7 @@ a:focus-visible {
 
   .evidence-inspector-dialog {
     inset: 0;
-    width: 100vw;
+    width: auto;
     height: 100dvh;
     max-height: 100dvh;
     border: 0;
@@ -1970,6 +2114,7 @@ a:focus-visible {
   .evidence-inspector-body {
     display: block;
     overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .evidence-inspector-preview,

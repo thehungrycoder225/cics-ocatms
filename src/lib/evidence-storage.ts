@@ -37,6 +37,16 @@ export interface EvidenceStorageConfiguration {
   accessKeyId?: string;
   secretAccessKey?: string;
   serverSideEncryption?: "AES256";
+  requestChecksumCalculation?: "WHEN_REQUIRED";
+}
+
+function isCloudflareR2Endpoint(endpoint: string | undefined): boolean {
+  if (!endpoint) return false;
+  try {
+    return new URL(endpoint).hostname.endsWith(".r2.cloudflarestorage.com");
+  } catch {
+    return false;
+  }
 }
 
 export function getEvidenceStorageConfiguration(
@@ -47,10 +57,17 @@ export function getEvidenceStorageConfiguration(
   if (!bucket || !region) throw new EvidenceStorageNotConfiguredError();
 
   const endpoint = env.S3_ENDPOINT?.trim();
+  const isCloudflareR2 = isCloudflareR2Endpoint(endpoint);
   const accessKeyId = env.S3_ACCESS_KEY_ID?.trim();
   const secretAccessKey = env.S3_SECRET_ACCESS_KEY?.trim();
   if (Boolean(accessKeyId) !== Boolean(secretAccessKey)) {
     throw new Error("S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY must be configured together.");
+  }
+  if (isCloudflareR2 && region !== "auto" && region !== "us-east-1") {
+    throw new Error("Cloudflare R2 S3_REGION must be auto or us-east-1.");
+  }
+  if (isCloudflareR2 && !accessKeyId) {
+    throw new Error("Cloudflare R2 requires S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY.");
   }
 
   const encryptionValue = env.S3_SERVER_SIDE_ENCRYPTION;
@@ -64,7 +81,8 @@ export function getEvidenceStorageConfiguration(
     ...(endpoint ? { endpoint } : {}),
     forcePathStyle: env.S3_FORCE_PATH_STYLE === "true",
     ...(accessKeyId && secretAccessKey ? { accessKeyId, secretAccessKey } : {}),
-    ...(encryptionValue === undefined || encryptionValue === "AES256"
+    ...(isCloudflareR2 ? { requestChecksumCalculation: "WHEN_REQUIRED" as const } : {}),
+    ...(!isCloudflareR2 && (encryptionValue === undefined || encryptionValue === "AES256")
       ? { serverSideEncryption: encryptionValue ?? "AES256" }
       : {}),
   };
@@ -80,6 +98,7 @@ function getStorage() {
     accessKeyId,
     secretAccessKey,
     serverSideEncryption,
+    requestChecksumCalculation,
   } = configuration;
   const client = new S3Client({
     region,
@@ -88,6 +107,7 @@ function getStorage() {
     ...(accessKeyId && secretAccessKey
       ? { credentials: { accessKeyId, secretAccessKey } }
       : {}),
+    ...(requestChecksumCalculation ? { requestChecksumCalculation } : {}),
   });
   return { client, bucket, serverSideEncryption };
 }

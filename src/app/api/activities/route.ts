@@ -8,6 +8,7 @@ import {
   readJsonBody,
 } from "@/lib/api";
 import { requireActivityPermission } from "@/lib/activity-management";
+import { getActivityStatus } from "@/lib/activity-status";
 import { AuthorizationError, getAuthenticatedIdentity } from "@/lib/authorization";
 import { getDb } from "@/lib/db";
 
@@ -52,12 +53,7 @@ export async function POST(request: NextRequest) {
         parsed.data.collegeIds,
       );
 
-      const today = new Date().toISOString().slice(0, 10);
-      const status = parsed.data.startDate > today
-        ? "UPCOMING"
-        : parsed.data.endDate < today
-          ? "COMPLETED"
-          : "ONGOING";
+      const status = getActivityStatus(parsed.data.startDate, parsed.data.endDate);
       const [activity] = await transaction<{ id: string }[]>`
         INSERT INTO activity (
           title, organizer, venue, start_date, end_date, status, approval_status,

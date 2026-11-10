@@ -63,6 +63,26 @@ test("Supabase Storage rejects unsupported server-side encryption and virtual-ho
   assert.ok(errors.some((error) => error.includes("explicitly empty")));
 });
 
+test("Cloudflare R2 requires its supported region and S3 credentials", () => {
+  const r2Environment = {
+    ...validEnvironment,
+    S3_REGION: "auto",
+    S3_ENDPOINT: "https://account-id.r2.cloudflarestorage.com",
+    S3_ACCESS_KEY_ID: "staging-access-key",
+    S3_SECRET_ACCESS_KEY: "staging-secret-key",
+  };
+  assert.deepEqual(validateProductionEnvironment(r2Environment), []);
+  assert.ok(validateProductionEnvironment({
+    ...r2Environment,
+    S3_REGION: "ap-southeast-1",
+  }).some((error) => error.includes("Cloudflare R2 S3_REGION")));
+  assert.ok(validateProductionEnvironment({
+    ...r2Environment,
+    S3_ACCESS_KEY_ID: "",
+    S3_SECRET_ACCESS_KEY: "",
+  }).some((error) => error.includes("Cloudflare R2 requires server-side S3 access keys")));
+});
+
 test("direct migration database URL is validated when provided", () => {
   const errors = validateProductionEnvironment({
     ...validEnvironment,

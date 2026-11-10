@@ -834,6 +834,29 @@ export async function submitCheckIn(
           })}::text::jsonb
         )
       `;
+      await transaction`
+        INSERT INTO app_notification (recipient_id, check_in_id)
+        SELECT DISTINCT recipient.id, ${checkIn.id}::uuid
+        FROM role_assignment assignment
+        JOIN app_user recipient ON recipient.id = assignment.user_id
+        JOIN app_user participant ON participant.id = ${identity.id}::uuid
+        WHERE recipient.status = 'ACTIVE'
+          AND (recipient.account_expires_at IS NULL OR recipient.account_expires_at > now())
+          AND (
+            (assignment.role = 'VPSAS' AND assignment.college_id IS NULL)
+            OR (
+              assignment.role = 'DEAN'
+              AND assignment.college_id = participant.college_id
+              AND EXISTS (
+                SELECT 1
+                FROM activity_college ac
+                WHERE ac.activity_id = ${session.activity_id}::uuid
+                  AND ac.college_id = assignment.college_id
+              )
+            )
+          )
+        ON CONFLICT (recipient_id, check_in_id) DO NOTHING
+      `;
       return response;
     });
     storedState.evidence = null;

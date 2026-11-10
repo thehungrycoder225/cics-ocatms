@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
       "form-action 'self'",
       "img-src 'self' data: blob: https:",
       "media-src 'self' blob:",
+      "worker-src 'self' blob:",
       "connect-src 'self' https:",
       "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",

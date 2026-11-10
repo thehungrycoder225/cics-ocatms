@@ -42,7 +42,11 @@ export async function listVisibleActivities(
       a.venue,
       a.start_date::text AS start_date,
       a.end_date::text AS end_date,
-      a.status,
+      CASE
+        WHEN a.start_date > (now() AT TIME ZONE 'Asia/Manila')::date THEN 'UPCOMING'
+        WHEN a.end_date < (now() AT TIME ZONE 'Asia/Manila')::date THEN 'COMPLETED'
+        ELSE 'ONGOING'
+      END AS status,
       a.approval_status,
       c.name AS college_name,
       COUNT(DISTINCT p.user_id)::int AS participant_count

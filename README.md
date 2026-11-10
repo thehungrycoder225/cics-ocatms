@@ -124,6 +124,9 @@ retained as the original object.
    `S3_FORCE_PATH_STYLE=true` only when required by the provider.
    `S3_SERVER_SIDE_ENCRYPTION` defaults to `AES256`; use an explicitly empty value only for a
    provider that rejects that S3 header. The application stores no evidence on the Vercel filesystem.
+   For Cloudflare R2, use the account S3 endpoint, `S3_REGION=auto`, and the bucket's S3 API
+   credentials. The adapter omits R2's unsupported server-side-encryption header and optional
+   SDK-generated upload checksums that R2 does not support for `PutObject`.
 3. Optionally set the server-only `MAPBOX_ACCESS_TOKEN` for Mapbox Directions. If absent or the
    provider is unavailable, the UI reports ETA as unavailable; no mock estimate is supplied.
    Driving, walking and cycling are supported. Two-wheeler, van, and ship ETAs are unavailable:
@@ -137,6 +140,10 @@ retained as the original object.
    ```powershell
    npm run db:migrate
    ```
+
+   Migration `0007_milestone_notifications.sql` adds the persisted in-app Dean/VPSAS inbox for
+   submitted arrival and check-out events. The inbox requires this migration; no email or push
+   notification service is configured.
 
 ### M2 demo path and API surfaces
 
